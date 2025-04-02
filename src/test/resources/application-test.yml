@@ -33,11 +33,12 @@ spring:
   sql:
     init:
       mode: always                                 # Sempre executa os scripts de inicialização
-      schema-locations: classpath:schema.sql      # Localização do script de esquema
       data-locations: classpath:data.sql          # Localização do script de dados
       cleanup-script: classpath:cleanup.sql       # Localização do script de limpeza (opcional)
 
 logging:
   level:
-    org.hibernate.SQL: DEBUG                      # Nível de log para consultas SQL
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE  # Nível de log para bindings
+    root: WARN  # Para mostrar apenas avisos e erros
+    org.springframework: WARN  # Para silenciar logs do Spring
+    org.hibernate: WARN  # Para silenciar logs do Hibernate
+    com.VMTecnologia.userService: DEBUG
