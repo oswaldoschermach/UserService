@@ -1,8 +1,38 @@
+# 📝 User Service API
+
+<div align="center">
+  <img src="https://img.shields.io/badge/Java-21+-blue?style=for-the-badge" alt="Java 21+">
+  <img src="https://img.shields.io/badge/Spring%20Boot-3.1.5-brightgreen?style=for-the-badge" alt="Spring Boot 3.1.5">
+  <img src="https://img.shields.io/badge/PostgreSQL-15+-blue?style=for-the-badge" alt="PostgreSQL 15+">
+  <img src="https://img.shields.io/badge/Swagger-2.8.6-green?style=for-the-badge" alt="Swagger 2.8.6">
+</div>
+
+## 🌟 Visão Geral
+API RESTful para gerenciamento completo de usuários com:
+
+- Autenticação JWT
+- Envio de e-mails de confirmação
+- Documentação Swagger integrada
+- Validações robustas
+- Paginação e filtros
+
+### Documentação
+```yaml
+# Configuração Swagger
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tagsSorter: alpha
+    operationsSorter: alpha
+  api-docs:
+    path: /v3/api-docs
+```
+
 # ⚙️ Configuração
 
 ## 📌 Pré-requisitos
 
-- **Java 17+**
+- **Java 21+**
 - **Maven 3.9+**
 - **PostgreSQL 15+**
 - **SMTP Server** (ex: Gmail)
