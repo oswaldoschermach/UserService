@@ -17,6 +17,11 @@ API RESTful para gerenciamento completo de usuários com:
 - Paginação e filtros
 
 ### Documentação
+
+A documentação da API pode ser acessada no ambiente através do link:
+
+🔗 **[Swagger - Ambiente](http://44.242.202.136:37989/swagger-ui/index.html#/)**
+
 ```yaml
 # Configuração Swagger
 springdoc:
@@ -27,7 +32,6 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 ```
-
 # ⚙️ Configuração
 
 ## 📌 Pré-requisitos
