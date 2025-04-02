@@ -27,42 +27,52 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import static org.mockito.ArgumentMatchers.anyString;
 
+/**
+ * Testes unitários para a classe {@link UserService}.
+ * Utiliza Spring Boot Test, Mockito e JUnit 5.
+ */
 @ExtendWith(SpringExtension.class)
 @SpringBootTest
 class UserServiceTest {
 
     @Autowired
-    private UserService userService; // Injeção do UserService
+    private UserService userService;
 
     @MockBean
-    private UserRepository userRepository; // Mock do UserRepository
+    private UserRepository userRepository;
 
     @MockBean
-    private PasswordEncoder passwordEncoder; // Mock do PasswordEncoder
+    private PasswordEncoder passwordEncoder;
 
     @MockBean
-    private EmailService emailService; // Mock do EmailService
+    private EmailService emailService;
 
     private UserRequestDTO validUserRequest;
 
+    /**
+     * Configuração inicial para cada teste.
+     */
     @BeforeEach
     void setUp() {
         validUserRequest = new UserRequestDTO(
                 "João Silva", "joao.silva", "joao@email.com", "Senha123@", "USER");
     }
 
+    /**
+     * Teste para verificar a criação de um usuário com dados válidos.
+     * Deve retornar um objeto {@link UserResponseDTO} com os dados corretos.
+     */
     @Test
     @DisplayName("createUser - Deve criar usuário com dados válidos")
     @Sql(scripts = "classpath:cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
     @Sql(scripts = "classpath:data.sql")
     void createUser_WithValidData_ShouldCreateUser() {
-        // Configuração específica para este teste
         when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
         when(userRepository.existsByEmail(anyString())).thenReturn(false);
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(userRepository.save(any(UserEntity.class))).thenAnswer(invocation -> {
             UserEntity user = invocation.getArgument(0);
-            user.setId(8L); // Simula um ID gerado para o novo usuário
+            user.setId(8L);
             return user;
         });
 
@@ -73,6 +83,9 @@ class UserServiceTest {
         verify(userRepository).save(any(UserEntity.class));
     }
 
+    /**
+     * Teste para verificar se a criação de um usuário com e-mail duplicado lança exceção.
+     */
     @Test
     @DisplayName("createUser - Deve lançar exceção quando email já existe")
     @Sql(scripts = "classpath:cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
@@ -84,6 +97,9 @@ class UserServiceTest {
                 () -> userService.createUser(validUserRequest));
     }
 
+    /**
+     * Teste para verificar se um usuário pode ser atualizado corretamente.
+     */
     @Test
     @DisplayName("updateUser - Deve atualizar usuário existente")
     @Sql(scripts = "classpath:cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
@@ -98,6 +114,9 @@ class UserServiceTest {
         assertEquals("João Silva Updated", result.getFullName());
     }
 
+    /**
+     * Teste para garantir que a tentativa de excluir um usuário com vínculos lança exceção.
+     */
     @Test
     @DisplayName("deleteUser - Deve lançar exceção quando usuário possui vínculos")
     @Sql(scripts = "classpath:cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
@@ -110,6 +129,9 @@ class UserServiceTest {
                 () -> userService.deleteUser(1L));
     }
 
+    /**
+     * Teste para verificar se parâmetros de paginação inválidos lançam exceção.
+     */
     @Test
     @DisplayName("findByFullName - Deve rejeitar paginação inválida")
     void findByFullName_ShouldRejectInvalidPagination() {

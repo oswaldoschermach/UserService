@@ -210,3 +210,68 @@ SMTP_PORT=587
 SMTP_USER=seu-email@gmail.com
 SMTP_PASSWORD=sua-senha
 ```
+---
+
+# 📌 Possibilidades para Frontend
+
+A implementação do frontend pode ser feita com diferentes tecnologias. Algumas das principais opções são:
+
+### 1. **Angular**
+✅ Prós:
+- Estrutura robusta e escalável
+- Suporte a TypeScript
+- Ferramentas poderosas como RxJS e CLI integrada
+
+❌ Contras:
+- Curva de aprendizado maior
+- Pode ser pesado para projetos pequenos
+
+### 2. **React**
+✅ Prós:
+- Grande comunidade e suporte
+- Flexibilidade na escolha de bibliotecas
+- Performance otimizada com Virtual DOM
+
+❌ Contras:
+- Maior necessidade de configuração inicial
+- Manutenção de estado pode ser complexa
+
+### 3. **Vue.js**
+✅ Prós:
+- Simplicidade e curva de aprendizado mais suave
+- Abordagem reativa intuitiva
+- Melhor desempenho em comparação com Angular
+
+❌ Contras:
+- Menor adoção em grandes empresas
+- Pode faltar suporte para algumas bibliotecas específicas
+
+A escolha da tecnologia depende das necessidades do projeto, da equipe disponível e dos objetivos a longo prazo. 
+
+---
+
+# 📌 Cobertura de Testes
+
+Os testes unitários foram implementados para garantir a funcionalidade correta dos principais fluxos da API de usuários. A motivação para a cobertura dos métodos e cenários testados é a seguinte:
+
+1. **`createUser_WithValidData_ShouldCreateUser`**
+    - **Motivação**: Testar se um usuário é criado corretamente quando os dados são válidos.
+    - **Cenário**: Simula o fluxo de criação de um novo usuário garantindo que o repositório e o serviço de e-mails sejam chamados corretamente.
+
+2. **`createUser_WithDuplicateEmail_ShouldThrowException`**
+    - **Motivação**: Garantir que não seja possível cadastrar usuários com e-mails duplicados.
+    - **Cenário**: Simula a tentativa de cadastro de um usuário com um e-mail já existente, esperando que uma exceção seja lançada.
+
+3. **`updateUser_WithValidData_ShouldUpdateUser`**
+    - **Motivação**: Testar a atualização de informações de um usuário existente.
+    - **Cenário**: Simula a atualização de nome e perfil de um usuário e verifica se os dados foram salvos corretamente.
+
+4. **`deleteUser_ShouldThrowWhenUserHasRelations`**
+    - **Motivação**: Garantir que a exclusão de usuários vinculados a outras entidades seja tratada corretamente.
+    - **Cenário**: Simula um cenário onde um usuário com vínculos tenta ser excluído e espera que uma exceção de integridade seja lançada.
+
+5. **`findByFullName_ShouldRejectInvalidPagination`**
+    - **Motivação**: Garantir que valores inválidos de paginação não sejam aceitos.
+    - **Cenário**: Simula a busca de usuários com parâmetros de paginação inválidos e verifica se exceções são lançadas corretamente.
+
+A cobertura de testes foca em validar regras de negócio críticas, prevenindo falhas comuns e garantindo a robustez do sistema. A abordagem utilizada prioriza testes de unidade para componentes individuais e testes de integração para cenários mais amplos. 
