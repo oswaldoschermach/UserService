@@ -1,0 +1,38 @@
+version: '3.8'
+#DEV ONLY, credenciais não funcionam em produção
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres_signuphub
+    restart: always
+    environment:
+      POSTGRES_DB: SignUpHub
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: dm1UZWNub2xvZ2lh
+    ports:
+      - "37568:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  user_service:
+    image: eclipse-temurin:21-jdk
+    container_name: user_service
+    restart: always
+    depends_on:
+      - postgres
+    ports:
+      - "35698:35698"
+    volumes:
+      - ./userService-0.0.1-SNAPSHOT.jar:/app/userService.jar
+    working_dir: /app
+    command: ["java", "-jar", "userService.jar"]
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/SignUpHub
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: dm1UZWNub2xvZ2lh
+      SPRING_MAIL_USERNAME: oswaldo.schermach@gmail.com
+      SPRING_MAIL_PASSWORD: pcaa cmlc ogrr jwdx
+      SERVER_PORT: 35698
+
+volumes:
+  postgres_data:

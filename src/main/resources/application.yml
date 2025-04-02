@@ -1,5 +1,5 @@
 server:
-  port: 38964
+  port: 35698
 
 spring:
   main:
@@ -63,7 +63,3 @@ springdoc:
     doc-expansion: none
   api-docs:
     path: /v3/api-docs
-
-swagger:
-  username: admin
-  password: supersecreta
