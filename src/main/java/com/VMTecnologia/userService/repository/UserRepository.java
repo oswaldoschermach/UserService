@@ -33,21 +33,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     // Novo método para verificar existência por username
     boolean existsByUsername(String username);
 
-    // Busca por email (retorna Optional)
-    Optional<UserEntity> findByEmail(String email);
-
     // Busca por username (retorna Optional)
     Optional<UserEntity> findByUsername(String username);
 
-    // Busca ativos por role
-    @Query("SELECT u FROM UserEntity u WHERE u.role = :role AND u.active = true")
-    List<UserEntity> findActiveUsersByRole(@Param("role") String role, Pageable pageable);
-
-    // Contagem de usuários ativos
-    long countByActiveTrue();
-
-    // Atualização seletiva (exemplo: desativar usuário)
-    @Modifying
-    @Query("UPDATE UserEntity u SET u.active = :active WHERE u.id = :id")
-    int updateUserStatus(@Param("id") Long id, @Param("active") boolean active);
 }

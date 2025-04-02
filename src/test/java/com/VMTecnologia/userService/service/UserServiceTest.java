@@ -75,7 +75,8 @@ class UserServiceTest {
 
     @Test
     @DisplayName("createUser - Deve lançar exceção quando email já existe")
-    @Sql(scripts = "classpath:insert_test_data.sql") // Carrega dados antes do teste
+    @Sql(scripts = "classpath:cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+    @Sql(scripts = "classpath:data.sql")
     void createUser_WithDuplicateEmail_ShouldThrowException() {
         when(userRepository.existsByEmail(validUserRequest.getEmail())).thenReturn(true);
 
@@ -85,7 +86,8 @@ class UserServiceTest {
 
     @Test
     @DisplayName("updateUser - Deve atualizar usuário existente")
-    @Sql(scripts = "classpath:insert_test_data.sql") // Carrega dados antes do teste
+    @Sql(scripts = "classpath:cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+    @Sql(scripts = "classpath:data.sql")
     void updateUser_WithValidData_ShouldUpdateUser() {
         UserUpdateDTO sampleUpdateDTO = new UserUpdateDTO("João Silva Updated", "USER", true);
         when(userRepository.findById(1L)).thenReturn(Optional.of(new UserEntity()));
@@ -98,7 +100,8 @@ class UserServiceTest {
 
     @Test
     @DisplayName("deleteUser - Deve lançar exceção quando usuário possui vínculos")
-    @Sql(scripts = "classpath:insert_test_data.sql") // Carrega dados antes do teste
+    @Sql(scripts = "classpath:cleanup.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+    @Sql(scripts = "classpath:data.sql")
     void deleteUser_ShouldThrowWhenUserHasRelations() {
         when(userRepository.existsById(1L)).thenReturn(true);
         doThrow(DataIntegrityViolationException.class).when(userRepository).deleteById(1L);
