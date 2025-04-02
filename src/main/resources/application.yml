@@ -1,0 +1,65 @@
+server:
+  port: 38963
+
+spring:
+  main:
+    web-application-type: servlet
+  application:
+    name: User Service
+    version: 1.0.0
+  mvc:
+    async:
+      request-timeout: 30000
+  output:
+    ansi:
+      enabled: always
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: oswaldo.schermach@gmail.com
+    password: pcaa cmlc ogrr jwdx
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+      mail.debug: true
+
+  datasource:
+    url: jdbc:postgresql://localhost:37568/SignUpHub
+    username: admin
+    password: dm1UZWNub2xvZ2lh
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 30000
+      connection-timeout: 30000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+logging:
+  file: logs/userService.log
+  pattern:
+    console: "%d %-5level %logger : %msg%n"
+    file: "%d %-5level [%thread] %logger : %msg%n"
+  level:
+    org.springframework.web: ERROR
+    com.howtodoinjava: INFO
+    org.hibernate: ERROR
+    org.springframework.security: DEBUG
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tagsSorter: alpha
+    operationsSorter: alpha
+    disable-swagger-default-url: true
+    doc-expansion: none
+  api-docs:
+    path: /v3/api-docs
