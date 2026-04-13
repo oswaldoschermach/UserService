@@ -4,6 +4,10 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+# Variáveis de ambiente ? NUNCA commitar
+.env
+*.env
+
 ### STS ###
 .apt_generated
 .classpath

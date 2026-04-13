@@ -1,0 +1,135 @@
+services:
+
+  # ?????????????????????????????????????????
+  # PostgreSQL ? banco de dados principal
+  # ?????????????????????????????????????????
+  postgres:
+    image: postgres:16-alpine
+    container_name: userservice_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-userservice}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-userservice}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - userservice_net
+
+  # ?????????????????????????????????????????
+  # Redis ? blacklist de tokens e rate limiting
+  # ?????????????????????????????????????????
+  redis:
+    image: redis:7-alpine
+    container_name: userservice_redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    command: >
+      sh -c "if [ -n '${REDIS_PASSWORD}' ]; then
+        redis-server --appendonly yes --requirepass ${REDIS_PASSWORD};
+      else
+        redis-server --appendonly yes;
+      fi"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - userservice_net
+
+  # ?????????????????????????????????????????
+  # MailHog ? servidor SMTP fake para dev
+  # Remova em produção e configure MAIL_HOST
+  # ?????????????????????????????????????????
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: userservice_mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # UI Web
+    networks:
+      - userservice_net
+
+  # ?????????????????????????????????????????
+  # UserService ? aplicação Spring Boot
+  # ?????????????????????????????????????????
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: userservice_app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+    ports:
+      - "${SERVER_PORT:-35698}:35698"
+    environment:
+      # Banco de dados
+      DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-userservice}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD}
+
+      # JWT
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+      JWT_REFRESH_EXPIRATION_MS: ${JWT_REFRESH_EXPIRATION_MS:-604800000}
+
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+
+      # E-mail (aponta para o MailHog interno)
+      MAIL_HOST: ${MAIL_HOST:-mailhog}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_USERNAME: ${MAIL_USERNAME:-dev@localhost}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+
+      # CORS
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:4200}
+
+      # Rate limiting
+      RATE_LIMIT_CREATE_USER_CAPACITY: ${RATE_LIMIT_CREATE_USER_CAPACITY:-10}
+      RATE_LIMIT_CREATE_USER_REFILL: ${RATE_LIMIT_CREATE_USER_REFILL:-10}
+      RATE_LIMIT_CREATE_USER_SECONDS: ${RATE_LIMIT_CREATE_USER_SECONDS:-60}
+
+      # Spring profile
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+
+      # Servidor
+      SERVER_PORT: 35698
+    networks:
+      - userservice_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:35698/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  userservice_net:
+    driver: bridge

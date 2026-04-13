@@ -1,0 +1,50 @@
+# Profile de desenvolvimento local
+# Ative com: --spring.profiles.active=dev
+# ou: export SPRING_PROFILES_ACTIVE=dev
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/userservice_dev}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: false
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+
+  mail:
+    host: localhost
+    port: 1025
+    username: dev@localhost
+    password: ''
+    properties:
+      mail.smtp.auth: false
+      mail.smtp.starttls.enable: false
+    debug: false
+
+jwt:
+  secret: ${JWT_SECRET:dGVzdFNlY3JldEtleUZvckp3dEF1dGgxMjM0NTY3ODk=}
+  expiration-ms: 86400000
+  refresh-expiration-ms: 604800000
+
+cors:
+  allowed-origins: http://localhost:3000,http://localhost:4200,http://localhost:5173
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    com.nebula: DEBUG

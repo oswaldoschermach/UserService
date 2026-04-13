@@ -1,5 +1,10 @@
 server:
-  port: 35698
+  port: ${SERVER_PORT:35698}
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}  # 7 dias
 
 spring:
   main:
@@ -14,19 +19,19 @@ spring:
     ansi:
       enabled: always
   mail:
-    host: smtp.gmail.com
-    port: 587
-    username: oswaldo.schermach@gmail.com
-    password: pcaa cmlc ogrr jwdx
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
-      mail.debug: true
+      mail.debug: false
 
   datasource:
-    url: jdbc:postgresql://localhost:37568/SignUpHub
-    username: admin
-    password: dm1UZWNub2xvZ2lh
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -37,11 +42,32 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: validate
+    show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:4200}
+
+rate-limit:
+  create-user:
+    capacity: ${RATE_LIMIT_CREATE_USER_CAPACITY:10}
+    refill-tokens: ${RATE_LIMIT_CREATE_USER_REFILL:10}
+    refill-seconds: ${RATE_LIMIT_CREATE_USER_SECONDS:60}
 
 logging:
   file: logs/userService.log
@@ -52,7 +78,16 @@ logging:
     org.springframework.web: ERROR
     com.howtodoinjava: INFO
     org.hibernate: ERROR
-    org.springframework.security: DEBUG
+    org.springframework.security: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
 
 springdoc:
   swagger-ui:

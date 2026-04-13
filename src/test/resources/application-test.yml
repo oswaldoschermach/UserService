@@ -1,44 +1,68 @@
+jwt:
+  secret: dGVzdFNlY3JldEtleUZvckp3dEF1dGgxMjM0NTY3ODk=
+  expiration-ms: 3600000
+  refresh-expiration-ms: 604800000
+
+cors:
+  allowed-origins: http://localhost:3000
+
+rate-limit:
+  create-user:
+    capacity: 100
+    refill-tokens: 100
+    refill-seconds: 60
+
 spring:
+  mail:
+    host: localhost
+    port: 3025
+    username: test@test.com
+    password: test
+    properties:
+      mail.smtp.auth: false
+      mail.smtp.starttls.enable: false
+
   datasource:
     url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;DATABASE_TO_UPPER=false
     username: sa
     password:
     driver-class-name: org.h2.Driver
-    initialization-mode: always
-    platform: h2
     hikari:
       maximum-pool-size: 5
       connection-test-query: SELECT 1
 
   jpa:
     hibernate:
-      ddl-auto: create-drop  # Cria e solta o esquema ao iniciar e parar a aplicação
-    show-sql: true            # Mostra as consultas SQL no log
-    generate-ddl: true        # Gera o DDL a partir das entidades
+      ddl-auto: create-drop
+    show-sql: false
+    generate-ddl: true
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.H2Dialect  # Dialeto do H2
-        format_sql: true                           # Formata as consultas SQL
-        use_sql_comments: true                     # Usa comentários nas SQL
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: false
         jdbc:
-          time_zone: UTC                           # Define o timezone
+          time_zone: UTC
+
+  flyway:
+    enabled: false
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
 
   h2:
     console:
-      enabled: true                                # Ativa o console H2
-      path: /h2-console                            # Caminho para acessar o console
-      settings:
-        web-allow-others: false                     # Restringe o acesso ao console
+      enabled: false
 
   sql:
     init:
-      mode: always                                 # Sempre executa os scripts de inicialização
-      data-locations: classpath:data.sql          # Localização do script de dados
-      cleanup-script: classpath:cleanup.sql       # Localização do script de limpeza (opcional)
+      mode: always
+      data-locations: classpath:data.sql
 
 logging:
   level:
-    root: WARN  # Para mostrar apenas avisos e erros
-    org.springframework: WARN  # Para silenciar logs do Spring
-    org.hibernate: WARN  # Para silenciar logs do Hibernate
-    com.VMTecnologia.userService: DEBUG
+    root: WARN
+    org.springframework: WARN
+    org.hibernate: WARN
+    com.nebula.userService: DEBUG
