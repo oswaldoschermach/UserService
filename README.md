@@ -131,7 +131,7 @@ com.nebula.userService
 - **Redis 7+** — [Download](https://redis.io/download/) ou via Docker
 - **Git**
 
-Para desenvolvimento local, recomenda-se usar o **Docker Compose** que sobe todos os serviços (PostgreSQL, Redis e MailHog) automaticamente.
+O arquivo `.env` é usado para configuração local e não deve ser commitado. Use `.env.example` como modelo e mantenha as credenciais e segredos fora do repositório.
 
 ---
 
@@ -152,15 +152,21 @@ Copie o arquivo de exemplo e preencha com seus valores:
 cp .env.example .env
 ```
 
-Edite o `.env`. Para desenvolvimento, os valores padrão já funcionam com o Docker Compose:
+Edite o `.env` com seus valores reais. Este arquivo está no `.gitignore` e nunca deve ser enviado ao GitHub.
+
+Exemplo de `.env`:
 
 ```dotenv
-DB_NAME=userservice
-DB_USERNAME=postgres
-DB_PASSWORD=minhasenha123
+SERVER_PORT=35698
+APP_EXTERNAL_PORT=18743
+SPRING_PROFILES_ACTIVE=dev
+PUBLIC_BASE_URL=http://localhost:18743
 
-# Gere com: openssl rand -base64 32
-JWT_SECRET=sua_chave_base64_aqui
+DB_URL=jdbc:postgresql://localhost:5432/userservice_dev
+DB_USERNAME=postgres
+DB_PASSWORD=troque_por_uma_senha_forte
+
+JWT_SECRET=gere_uma_chave_base64_forte
 JWT_EXPIRATION_MS=86400000
 JWT_REFRESH_EXPIRATION_MS=604800000
 
@@ -168,14 +174,19 @@ REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_PASSWORD=
 
-MAIL_HOST=mailhog
+MAIL_HOST=localhost
 MAIL_PORT=1025
 MAIL_USERNAME=dev@localhost
 MAIL_PASSWORD=
+MAIL_SMTP_AUTH=false
+MAIL_SMTP_STARTTLS_ENABLE=false
+MAIL_DEBUG=true
 
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:4200
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:4200,http://localhost:5173
 
-SPRING_PROFILES_ACTIVE=dev
+RATE_LIMIT_CREATE_USER_CAPACITY=10
+RATE_LIMIT_CREATE_USER_REFILL=10
+RATE_LIMIT_CREATE_USER_SECONDS=60
 ```
 
 > ⚠️ **Nunca commite o arquivo `.env`** — ele já está no `.gitignore`.
@@ -183,10 +194,8 @@ SPRING_PROFILES_ACTIVE=dev
 ### 3. Crie o banco de dados (se rodar sem Docker)
 
 ```sql
-CREATE DATABASE userservice;
+CREATE DATABASE userservice_dev;
 ```
-
-> Com Docker Compose o banco é criado automaticamente.
 
 ### 4. (Opcional) Gmail — App Password
 
@@ -201,12 +210,22 @@ Para usar o Gmail como SMTP em produção:
 
 ## 🚀 Como Rodar
 
-### Via Docker Compose (recomendado)
+### Via Maven (recomendado)
 
-Sobe a aplicação + PostgreSQL + Redis + MailHog com um único comando:
+Rode a aplicação diretamente com o wrapper Maven:
 
 ```bash
-docker compose up --build
+./mvnw clean package -DskipTests
+./mvnw spring-boot:run
+```
+
+### Via Jar
+
+O artefato gerado fica em `target/userService-1.0.0.jar` e também foi copiado para `user-service/userService-1.0.0.jar`.
+
+```bash
+./mvnw clean package -DskipTests
+java -jar user-service/userService-1.0.0.jar
 ```
 
 ### Manualmente — Perfil de desenvolvimento
@@ -247,10 +266,10 @@ Get-Content .env | ForEach-Object {
 .\mvnw.cmd spring-boot:run
 ```
 
-A aplicação sobe na porta **35698** por padrão:
-- API: `http://localhost:35698`
-- Swagger UI: `http://localhost:35698/swagger-ui.html`
-- Health: `http://localhost:35698/actuator/health`
+A aplicação fica acessível externamente na porta **18743** por padrão:
+- API: `http://localhost:18743`
+- Swagger UI: `http://localhost:18743/swagger-ui.html`
+- Health: `http://localhost:18743/actuator/health`
 
 ---
 
@@ -584,8 +603,10 @@ src/main/resources/db/migration/V3__descricao_da_mudanca.sql
 | `RATE_LIMIT_CREATE_USER_CAPACITY` | ❌ | `10` | Capacidade máxima do bucket |
 | `RATE_LIMIT_CREATE_USER_REFILL` | ❌ | `10` | Tokens repostos por intervalo |
 | `RATE_LIMIT_CREATE_USER_SECONDS` | ❌ | `60` | Intervalo de reposição em segundos |
+| `APP_EXTERNAL_PORT` | ❌ | `18743` | Porta publicada pelo Docker no host/servidor |
 | `SERVER_PORT` | ❌ | `35698` | Porta HTTP da aplicação |
-| `SPRING_PROFILES_ACTIVE` | ❌ | *(vazio)* | `dev` para desenvolvimento local |
+| `PUBLIC_BASE_URL` | ❌ | `http://localhost:18743` | URL pública usada como referência no Swagger |
+| `SPRING_PROFILES_ACTIVE` | ❌ | `docker` | `dev` para desenvolvimento local sem Compose |
 
 ---
 
@@ -708,13 +729,13 @@ target/site/jacoco/index.html
 
 ## 🐳 Docker
 
-O projeto possui suporte completo a Docker com **build multi-stage** e **quatro serviços** orquestrados via Docker Compose.
+O projeto possui suporte completo a Docker com **build multi-stage** e **quatro servicos** orquestrados via Docker Compose.
 
 ### Serviços
 
 | Container | Imagem | Porta | Descrição |
 |---|---|---|---|
-| `userservice_app` | Build local (multi-stage) | `35698` | Aplicação Spring Boot |
+| `userservice_app` | Build local (multi-stage) | `18743 -> 35698` | Aplicação Spring Boot |
 | `userservice_postgres` | `postgres:16-alpine` | `5432` | Banco de dados |
 | `userservice_redis` | `redis:7-alpine` | `6379` | Blacklist + rate limiting |
 | `userservice_mailhog` | `mailhog/mailhog` | `1025` / `8025` | SMTP fake (dev) |
@@ -727,7 +748,7 @@ O projeto possui suporte completo a Docker com **build multi-stage** e **quatro 
 
 ```bash
 cp .env.example .env
-# Edite .env com DB_PASSWORD e JWT_SECRET obrigatoriamente
+# Opcionalmente ajuste DB_PASSWORD e JWT_SECRET
 ```
 
 ### 2. Suba todos os serviços
@@ -736,11 +757,17 @@ cp .env.example .env
 docker compose up --build
 ```
 
+Para deploy remoto com apenas a API publicada externamente:
+
+```bash
+docker compose -f docker-compose.remote.yml up -d --build
+```
+
 Na primeira vez o Docker irá:
 1. Baixar as imagens (`postgres:16-alpine`, `redis:7-alpine`, `mailhog/mailhog`, `eclipse-temurin:17`)
 2. Compilar o projeto com Maven dentro do container (stage `build`)
 3. Gerar a imagem final leve com JRE + JAR (stage `runtime`)
-4. Subir os quatro containers — `app` aguarda `postgres` e `redis` ficarem `healthy`
+4. Subir os quatro containers - `app` aguarda `postgres`, `redis` e `mailhog` ficarem `healthy`
 
 ### 3. Verificar se está rodando
 
@@ -750,22 +777,52 @@ docker compose ps
 
 ```
 NAME                    STATUS          PORTS
-userservice_postgres    healthy         0.0.0.0:5432->5432/tcp
-userservice_redis       healthy         0.0.0.0:6379->6379/tcp
-userservice_mailhog     running         0.0.0.0:1025->1025/tcp, 0.0.0.0:8025->8025/tcp
-userservice_app         healthy         0.0.0.0:35698->35698/tcp
+userservice_postgres    healthy         0.0.0.0:55432->5432/tcp
+userservice_redis       healthy         0.0.0.0:56379->6379/tcp
+userservice_mailhog     running         0.0.0.0:51025->1025/tcp, 0.0.0.0:58025->8025/tcp
+userservice_app         healthy         0.0.0.0:18743->35698/tcp
 ```
 
 ### URLs disponíveis
 
 | Serviço | URL |
 |---|---|
-| API | `http://localhost:35698` |
-| Swagger UI | `http://localhost:35698/swagger-ui.html` |
-| Health Check | `http://localhost:35698/actuator/health` |
-| MailHog (e-mails) | `http://localhost:8025` |
-| PostgreSQL | `localhost:5432` |
-| Redis | `localhost:6379` |
+| API | `http://localhost:18743` |
+| Swagger UI | `http://localhost:18743/swagger-ui.html` |
+| Health Check | `http://localhost:18743/actuator/health` |
+| MailHog (e-mails) | `http://localhost:58025` |
+| PostgreSQL | `localhost:55432` |
+| Redis | `localhost:56379` |
+
+### Deploy remoto
+
+Se o servidor remoto abrir apenas a porta `18743`, use o arquivo de override:
+
+```bash
+cp .env.example .env
+# ajuste JWT_SECRET, DB_PASSWORD e PUBLIC_BASE_URL
+docker compose -f docker-compose.remote.yml up -d --build
+```
+
+Com `docker-compose.remote.yml`:
+- somente a API fica publicada externamente na porta `18743`
+- PostgreSQL, Redis e MailHog continuam acessiveis apenas na rede interna do Docker
+- o Swagger passa a usar a propria origem atual e pode exibir `PUBLIC_BASE_URL` como referencia adicional
+
+### Swagger para consumidores
+
+O Swagger foi preparado para ser usado como documentacao principal pelos times consumidores:
+- cada endpoint possui descricao funcional, regras de negocio e observacoes de seguranca
+- os payloads de request e response possuem exemplos completos
+- os erros comuns (`400`, `401`, `403`, `404`, `409`, `429`) aparecem com exemplos padronizados
+- a UI mantem o token salvo durante a navegacao e permite usar `Try it out`
+
+Fluxo recomendado para um dev integrar via Swagger:
+1. Abrir `http://<host>:18743/swagger-ui.html`
+2. Executar `POST /api/auth/login`
+3. Copiar o campo `token`
+4. Clicar em `Authorize` e informar `Bearer <token>`
+5. Testar as rotas protegidas
 
 ### Comandos úteis
 
@@ -802,13 +859,15 @@ Stage 2 (runtime) →  eclipse-temurin:17-jre-alpine   ≈ 100 MB
 
 ### Para produção
 
-Configure as variáveis reais no `.env` e remova o `mailhog`:
+Configure as variaveis reais no `.env` e, se preferir, substitua o MailHog por SMTP real:
 
 ```dotenv
 MAIL_HOST=smtp.gmail.com
 MAIL_PORT=587
 MAIL_USERNAME=seu@email.com
 MAIL_PASSWORD=sua_app_password
+MAIL_SMTP_AUTH=true
+MAIL_SMTP_STARTTLS_ENABLE=true
 CORS_ALLOWED_ORIGINS=https://app.suaempresa.com
 SPRING_PROFILES_ACTIVE=
 ```
