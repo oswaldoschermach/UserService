@@ -2,7 +2,9 @@ package com.nebula.userService.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nebula.userService.configs.JwtAuthenticationFilter;
+import com.nebula.userService.dto.CurrentUserUpdateDTO;
 import com.nebula.userService.configs.JwtConfig;
+import com.nebula.userService.dto.PasswordChangeDTO;
 import com.nebula.userService.dto.UserRequestDTO;
 import com.nebula.userService.dto.UserResponseDTO;
 import com.nebula.userService.dto.UserUpdateDTO;
@@ -113,6 +115,33 @@ class UserControllerTest {
     }
 
     @Test
+    @WithMockUser
+    @DisplayName("POST createUser - role ADMIN retorna 400")
+    void createUser_AdminRole_Returns400() throws Exception {
+        UserRequestDTO invalid = new UserRequestDTO("Joao Silva", "joao.silva", "joao@empresa.com", "Senha@123", Role.ADMIN);
+        when(userService.createUser(any())).thenThrow(new IllegalArgumentException("Cadastro público permite apenas usuários com role USER"));
+
+        mockMvc.perform(post("/api/users/createUser").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalid)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser
+    @DisplayName("POST createUser - rate limit excedido retorna 429 com payload")
+    void createUser_RateLimitExceeded_Returns429() throws Exception {
+        when(rateLimitService.tryConsume(any())).thenReturn(false);
+
+        mockMvc.perform(post("/api/users/createUser").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(userRequestDTO)))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.status").value(429))
+                .andExpect(jsonPath("$.error").value("Too Many Requests"));
+    }
+
+    @Test
     @WithMockUser(roles = "ADMIN")
     @DisplayName("PUT updateUser - retorna 200")
     void updateUser_Returns200() throws Exception {
@@ -163,6 +192,45 @@ class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.username").value("joao.silva"));
+    }
+
+    @Test
+    @WithMockUser(username = "joao.silva", roles = "USER")
+    @DisplayName("GET me - retorna 200")
+    void getCurrentUser_Returns200() throws Exception {
+        when(userService.findCurrentUser("joao.silva")).thenReturn(userResponseDTO);
+
+        mockMvc.perform(get("/api/users/me"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("joao.silva"));
+    }
+
+    @Test
+    @WithMockUser(username = "joao.silva", roles = "USER")
+    @DisplayName("PUT me - retorna 200")
+    void updateCurrentUser_Returns200() throws Exception {
+        CurrentUserUpdateDTO updateDTO = new CurrentUserUpdateDTO("Joao Atualizado");
+        UserResponseDTO updated = new UserResponseDTO(1L, "Joao Atualizado", Role.USER, "joao.silva", "joao@empresa.com", true);
+        when(userService.updateCurrentUser(eq("joao.silva"), any())).thenReturn(updated);
+
+        mockMvc.perform(put("/api/users/me").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updateDTO)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.fullName").value("Joao Atualizado"));
+    }
+
+    @Test
+    @WithMockUser(username = "joao.silva", roles = "USER")
+    @DisplayName("POST me/change-password - retorna 204")
+    void changePassword_Returns204() throws Exception {
+        PasswordChangeDTO dto = new PasswordChangeDTO("Senha@123", "NovaSenha@456");
+        doNothing().when(userService).changePassword(eq("joao.silva"), any(), anyString());
+
+        mockMvc.perform(post("/api/users/me/change-password").with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isNoContent());
     }
 
     @Test

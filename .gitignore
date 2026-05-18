@@ -4,7 +4,7 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
-# Variáveis de ambiente ? NUNCA commitar
+# VariÃ¡veis de ambiente ? NUNCA commitar
 .env
 *.env
 

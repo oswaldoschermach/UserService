@@ -20,7 +20,8 @@ public class ErrorResponseDTO {
     @Schema(description = "Descrição do tipo de erro", example = "Not Found")
     private final String error;
 
-    @Schema(description = "Mensagem descritiva do erro", example = "Usuário não encontrado com ID: 1")
+    @Schema(description = "Mensagem descritiva do erro retornada pela API",
+            example = "Usuario nao encontrado com ID: 1")
     private final String message;
 
     @Schema(description = "Caminho da requisição que gerou o erro", example = "/api/users/1")

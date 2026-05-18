@@ -184,6 +184,10 @@ MAIL_DEBUG=true
 
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:4200,http://localhost:5173
 
+# Webhooks
+WEBHOOKS_URLS=
+WEBHOOKS_TIMEOUT_MS=2000
+
 RATE_LIMIT_CREATE_USER_CAPACITY=10
 RATE_LIMIT_CREATE_USER_REFILL=10
 RATE_LIMIT_CREATE_USER_SECONDS=60
@@ -282,6 +286,9 @@ A aplicação fica acessível externamente na porta **18743** por padrão:
 | `POST` | `/api/auth/login` | ❌ Público | Autentica e retorna access + refresh token |
 | `POST` | `/api/auth/refresh` | ❌ Público | Renova o access token com o refresh token |
 | `POST` | `/api/auth/logout` | ✅ JWT | Revoga os tokens (logout) |
+| `GET` | `/api/auth/sessions` | ✅ JWT | Lista sessões ativas do usuário autenticado |
+| `POST` | `/api/auth/sessions/revoke-all` | ✅ JWT | Revoga todas as sessões do usuário autenticado |
+| `POST` | `/api/auth/sessions/{sessionId}/revoke` | ✅ JWT | Revoga uma sessão específica pelo ID |
 | `POST` | `/api/auth/password-reset/request` | ❌ Público | Solicita recuperação de senha por e-mail |
 | `POST` | `/api/auth/password-reset/confirm` | ❌ Público | Redefine a senha com o token recebido |
 
@@ -338,6 +345,7 @@ Authorization: Bearer <access_token>
 | `GET` | `/api/users/{id}` | ✅ JWT | USER | ❌ | Busca usuário por ID |
 | `GET` | `/api/users/search` | ✅ JWT | USER | ❌ | Busca paginada por nome |
 | `PUT` | `/api/users/{id}` | ✅ JWT | **ADMIN** | ❌ | Atualiza nome, role, status |
+| `PUT` | `/api/users/{id}/permissions` | ✅ JWT | **ADMIN** ou `PERMISSION_MANAGE` | ❌ | Atualiza permissões finas do usuário |
 | `DELETE` | `/api/users/{id}` | ✅ JWT | **ADMIN** | ❌ | Remove usuário |
 
 **Criar usuário:**

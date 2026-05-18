@@ -1,4 +1,4 @@
-# Dependências e build local
+# DependÃªncias e build local
 target/
 .mvn/repository/
 
@@ -12,7 +12,7 @@ target/
 .classpath
 .project
 
-# Variáveis de ambiente ? nunca incluir na imagem
+# VariÃ¡veis de ambiente ? nunca incluir na imagem
 .env
 *.env
 
@@ -29,5 +29,5 @@ Dockerfile
 docker-compose.yml
 .dockerignore
 
-# Documentação
+# DocumentaÃ§Ã£o
 README.md

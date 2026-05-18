@@ -10,7 +10,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @AllArgsConstructor
-@Schema(description = "DTO de resposta com os dados do usuário retornados pela API")
+@Schema(description = "Payload de resposta com os dados publicos do usuario")
 public class UserResponseDTO {
 
     @Schema(description = "ID único do usuário no sistema",
@@ -18,8 +18,8 @@ public class UserResponseDTO {
             accessMode = Schema.AccessMode.READ_ONLY)
     private Long id;
 
-    @Schema(description = "Nome completo do usuário",
-            example = "João da Silva",
+    @Schema(description = "Nome completo do usuario",
+            example = "Joao da Silva",
             minLength = 3,
             maxLength = 255)
     private String fullName;
@@ -35,10 +35,14 @@ public class UserResponseDTO {
             maxLength = 255)
     private String username;
 
-    @Schema(description = "Email cadastrado do usuário",
+    @Schema(description = "Email cadastrado do usuario",
             example = "joao@empresa.com",
             pattern = "^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$")
     private String email;
+
+    @Schema(description = "Permissões finas concedidas ao usuário",
+            example = "[USER_VIEW, PASSWORD_CHANGE]")
+    private java.util.Set<com.nebula.userService.enums.Permission> permissions;
 
     @Schema(description = "Indica se o usuário está ativo no sistema",
             example = "true",
@@ -54,6 +58,7 @@ public class UserResponseDTO {
                 user.getRole(),
                 user.getUsername(),
                 user.getEmail(),
+                user.getPermissions(),
                 user.getActive()
         );
     }

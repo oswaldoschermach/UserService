@@ -43,31 +43,44 @@ public class JwtConfig {
      * Generates an access token (short-lived) with roles.
      */
     public String generateToken(String username) {
-        return generateToken(username, List.of());
+        return generateToken(username, List.of(), List.of(), null);
     }
 
     public String generateToken(String username, List<String> roles) {
-        return Jwts.builder()
+        return generateToken(username, roles, List.of(), null);
+    }
+
+    public String generateToken(String username, List<String> roles, List<String> permissions, String sessionId) {
+        var builder = Jwts.builder()
                 .subject(username)
                 .claim("roles", roles)
+                .claim("permissions", permissions)
                 .claim("type", "access")
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + expirationTime))
-                .signWith(secretKey)
-                .compact();
+                .expiration(new Date(System.currentTimeMillis() + expirationTime));
+
+        if (sessionId != null) {
+            builder.claim("sessionId", sessionId);
+        }
+
+        return builder.signWith(secretKey).compact();
     }
 
     /**
      * Generates a refresh token (long-lived, no roles).
      */
-    public String generateRefreshToken(String username) {
-        return Jwts.builder()
+    public String generateRefreshToken(String username, String sessionId) {
+        var builder = Jwts.builder()
                 .subject(username)
                 .claim("type", "refresh")
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + refreshExpirationTime))
-                .signWith(secretKey)
-                .compact();
+                .expiration(new Date(System.currentTimeMillis() + refreshExpirationTime));
+
+        if (sessionId != null) {
+            builder.claim("sessionId", sessionId);
+        }
+
+        return builder.signWith(secretKey).compact();
     }
 
     /**

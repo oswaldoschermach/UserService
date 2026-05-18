@@ -29,6 +29,7 @@ public class AuditLogService {
     public static final String USER_DELETED     = "USER_DELETED";
     public static final String PASSWORD_RESET_REQUESTED = "PASSWORD_RESET_REQUESTED";
     public static final String PASSWORD_RESET_COMPLETED = "PASSWORD_RESET_COMPLETED";
+    public static final String PASSWORD_CHANGED = "PASSWORD_CHANGED";
     public static final String ACCOUNT_LOCKED   = "ACCOUNT_LOCKED";
 
     // ─── Métodos de registro ──────────────────────────────────────────────────

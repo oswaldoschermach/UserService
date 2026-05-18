@@ -1,0 +1,33 @@
+# Dependências e build local
+target/
+.mvn/repository/
+
+# IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.classpath
+.project
+
+# Variáveis de ambiente ? nunca incluir na imagem
+.env
+*.env
+
+# Logs
+logs/
+*.log
+
+# Git
+.git/
+.gitignore
+
+# Docker (evita loop)
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentação
+README.md

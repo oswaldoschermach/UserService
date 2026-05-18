@@ -20,6 +20,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -27,14 +28,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtConfig jwtConfig;
     private final UserDetailsService userDetailsService;
     private final TokenBlacklistService tokenBlacklistService;
+    private final com.nebula.userService.service.SessionService sessionService;
 
     @Autowired
     public JwtAuthenticationFilter(JwtConfig jwtConfig,
                                    @Lazy UserDetailsService userDetailsService,
-                                   TokenBlacklistService tokenBlacklistService) {
+                                   TokenBlacklistService tokenBlacklistService,
+                                   com.nebula.userService.service.SessionService sessionService) {
         this.jwtConfig = jwtConfig;
         this.userDetailsService = userDetailsService;
         this.tokenBlacklistService = tokenBlacklistService;
+        this.sessionService = sessionService;
     }
 
     @Override
@@ -70,9 +74,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
+                String sessionId = claims.get("sessionId", String.class);
+                if (sessionId == null || !sessionService.isSessionActive(sessionId, username)) {
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Sessão inválida ou expirada");
+                    return;
+                }
+
+                sessionService.refreshSession(sessionId);
+
                 List<String> roles = claims.get("roles", List.class);
-                List<SimpleGrantedAuthority> authorities = (roles != null ? roles : List.<String>of())
-                        .stream()
+                List<String> permissions = claims.get("permissions", List.class);
+                List<SimpleGrantedAuthority> authorities = Stream.concat(
+                                (roles != null ? roles : List.<String>of()).stream(),
+                                (permissions != null ? permissions : List.<String>of()).stream()
+                        )
                         .map(SimpleGrantedAuthority::new)
                         .collect(Collectors.toList());
 

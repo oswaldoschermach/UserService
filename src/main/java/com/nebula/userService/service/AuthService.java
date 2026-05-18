@@ -3,6 +3,7 @@ package com.nebula.userService.service;
 import com.nebula.userService.configs.JwtConfig;
 import com.nebula.userService.dto.JwtResponse;
 import com.nebula.userService.dto.LoginRequest;
+import com.nebula.userService.dto.UserSessionDTO;
 import com.nebula.userService.entities.UserEntity;
 import com.nebula.userService.repository.UserRepository;
 import io.jsonwebtoken.Claims;
@@ -28,10 +29,11 @@ public class AuthService {
     private final UserRepository userRepository;
     private final TokenBlacklistService tokenBlacklistService;
     private final AuditLogService auditLogService;
+    private final SessionService sessionService;
 
     /** Autentica o usuário e retorna access + refresh token. */
     @Transactional
-    public JwtResponse authenticateUser(LoginRequest loginRequest, String ipAddress) {
+    public JwtResponse authenticateUser(LoginRequest loginRequest, String ipAddress, String userAgent) {
         UserEntity user = userRepository.findByUsername(loginRequest.getUsername())
                 .orElse(null);
 
@@ -58,8 +60,13 @@ public class AuthService {
             userRepository.save(user);
 
             String role = user.getRole() != null ? user.getRole().name() : "USER";
-            String accessToken  = jwtConfig.generateToken(user.getUsername(), List.of("ROLE_" + role));
-            String refreshToken = jwtConfig.generateRefreshToken(user.getUsername());
+            String sessionId = sessionService.createSession(user, ipAddress, userAgent).getSessionId();
+            List<String> permissions = user.getPermissions() != null ? user.getPermissions().stream()
+                    .map(Enum::name)
+                    .toList() : List.of();
+
+            String accessToken  = jwtConfig.generateToken(user.getUsername(), List.of("ROLE_" + role), permissions, sessionId);
+            String refreshToken = jwtConfig.generateRefreshToken(user.getUsername(), sessionId);
 
             auditLogService.log(AuditLogService.LOGIN_SUCCESS, user,
                     "Login bem-sucedido", ipAddress);
@@ -88,7 +95,7 @@ public class AuthService {
 
     /** Sobrecarga sem IP para manter compatibilidade com testes. */
     public JwtResponse authenticateUser(LoginRequest loginRequest) {
-        return authenticateUser(loginRequest, "unknown");
+        return authenticateUser(loginRequest, "unknown", "unknown");
     }
 
     /**
@@ -106,12 +113,23 @@ public class AuthService {
         }
 
         String username = claims.getSubject();
+        String sessionId = claims.get("sessionId", String.class);
+
+        if (sessionId == null || !sessionService.isSessionActive(sessionId, username)) {
+            throw new AuthenticationServiceException("Sessão expirada ou revogada");
+        }
+
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        String role = user.getRole() != null ? user.getRole().name() : "USER";
-        String newAccessToken = jwtConfig.generateToken(username, List.of("ROLE_" + role));
+        List<String> permissions = user.getPermissions() != null ? user.getPermissions().stream()
+                .map(Enum::name)
+                .toList() : List.of();
 
+        String role = user.getRole() != null ? user.getRole().name() : "USER";
+        String newAccessToken = jwtConfig.generateToken(username, List.of("ROLE_" + role), permissions, sessionId);
+
+        sessionService.refreshSession(sessionId);
         return new JwtResponse(newAccessToken, refreshToken);
     }
 
@@ -119,18 +137,36 @@ public class AuthService {
      * Revoga o access token e o refresh token (logout).
      */
     public void logout(String accessToken, String refreshToken, String ipAddress) {
-        revokeToken(accessToken);
+        if (accessToken != null) {
+            revokeToken(accessToken);
+        }
         if (refreshToken != null) {
             revokeToken(refreshToken);
         }
 
-        // Tenta registrar auditoria com o usuário do token
         try {
             Claims claims = jwtConfig.extractClaims(accessToken);
-            userRepository.findByUsername(claims.getSubject()).ifPresent(user ->
+            String username = claims.getSubject();
+            String sessionId = claims.get("sessionId", String.class);
+            if (sessionId != null) {
+                sessionService.revokeSession(sessionId, username, ipAddress);
+            }
+            userRepository.findByUsername(username).ifPresent(user ->
                     auditLogService.log(AuditLogService.LOGOUT, user, "Logout", ipAddress)
             );
         } catch (Exception ignored) { }
+    }
+
+    public void revokeAllSessions(String username, String ipAddress) {
+        sessionService.revokeAllSessions(username, ipAddress);
+    }
+
+    public void revokeSession(String sessionId, String username, String ipAddress) {
+        sessionService.revokeSession(sessionId, username, ipAddress);
+    }
+
+    public java.util.List<UserSessionDTO> listSessions(String username) {
+        return sessionService.listSessions(username);
     }
 
     /** Sobrecarga sem IP para manter compatibilidade. */
@@ -139,6 +175,9 @@ public class AuthService {
     }
 
     private void revokeToken(String token) {
+        if (token == null || token.isBlank()) {
+            return;
+        }
         try {
             Claims claims = jwtConfig.extractClaims(token);
             long ttlMillis = claims.getExpiration().getTime() - new Date().getTime();

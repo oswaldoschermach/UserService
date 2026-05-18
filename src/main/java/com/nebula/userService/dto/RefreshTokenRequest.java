@@ -9,10 +9,12 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Requisição com refresh token para renovação do access token")
+@Schema(description = "Payload para renovar o access token a partir de um refresh token ainda valido e nao revogado")
 public class RefreshTokenRequest {
 
     @NotBlank(message = "Refresh token é obrigatório")
-    @Schema(description = "Refresh token recebido no login", example = "eyJhbGciOiJIUzI1NiJ9...")
+    @Schema(description = "Refresh token retornado no endpoint de login",
+            example = "eyJhbGciOiJIUzI1NiJ9...",
+            requiredMode = Schema.RequiredMode.REQUIRED)
     private String refreshToken;
 }

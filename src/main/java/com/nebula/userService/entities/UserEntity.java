@@ -57,6 +57,15 @@ public class UserEntity {
             allowableValues = {"USER", "ADMIN", "MODERATOR"})
     private Role role;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_permissions", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "permission", nullable = false, length = 100)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    @Schema(description = "Permissões finas atribuídas ao usuário",
+            example = "[USER_VIEW, USER_EDIT]")
+    private java.util.Set<com.nebula.userService.enums.Permission> permissions = new java.util.HashSet<>();
+
     @Column(length = 255, unique = true, nullable = false)
     @Schema(description = "Nome de usuário único para login",
             example = "joao.silva",

@@ -43,6 +43,10 @@ jwt:
 cors:
   allowed-origins: http://localhost:3000,http://localhost:4200,http://localhost:5173
 
+webhooks:
+  urls: ${WEBHOOKS_URLS:}
+  timeout-ms: ${WEBHOOKS_TIMEOUT_MS:2000}
+
 logging:
   level:
     org.springframework.security: DEBUG

@@ -1,5 +1,6 @@
 server:
   port: ${SERVER_PORT:35698}
+  forward-headers-strategy: framework
 
 jwt:
   secret: ${JWT_SECRET}
@@ -63,6 +64,10 @@ spring:
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:4200}
 
+webhooks:
+  urls: ${WEBHOOKS_URLS:}
+  timeout-ms: ${WEBHOOKS_TIMEOUT_MS:2000}
+
 rate-limit:
   create-user:
     capacity: ${RATE_LIMIT_CREATE_USER_CAPACITY:10}
@@ -96,5 +101,9 @@ springdoc:
     operationsSorter: alpha
     disable-swagger-default-url: true
     doc-expansion: none
+    tryItOutEnabled: true
+    persistAuthorization: true
+    displayRequestDuration: true
+    filter: true
   api-docs:
     path: /v3/api-docs

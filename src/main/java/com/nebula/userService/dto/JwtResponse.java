@@ -8,13 +8,15 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Resposta de autenticação contendo os tokens JWT")
+@Schema(description = "Resposta de autenticacao contendo o access token e o refresh token")
 public class JwtResponse {
 
-    @Schema(description = "Access token JWT (expira em 24h)", example = "eyJhbGciOiJIUzI1NiJ9...")
+    @Schema(description = "Access token JWT usado nos endpoints protegidos via header Authorization. Expira em 24 horas.",
+            example = "eyJhbGciOiJIUzI1NiJ9...")
     private String token;
 
-    @Schema(description = "Refresh token para renovar o access token (expira em 7 dias)", example = "eyJhbGciOiJIUzI1NiJ9...")
+    @Schema(description = "Refresh token usado para emitir um novo access token sem novo login. Expira em 7 dias.",
+            example = "eyJhbGciOiJIUzI1NiJ9...")
     private String refreshToken;
 
     /** Construtor de compatibilidade para testes que só usam o access token. */

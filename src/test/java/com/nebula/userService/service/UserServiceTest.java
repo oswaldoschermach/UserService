@@ -1,5 +1,7 @@
 package com.nebula.userService.service;
 
+import com.nebula.userService.dto.CurrentUserUpdateDTO;
+import com.nebula.userService.dto.PasswordChangeDTO;
 import com.nebula.userService.dto.UserRequestDTO;
 import com.nebula.userService.dto.UserResponseDTO;
 import com.nebula.userService.dto.UserUpdateDTO;
@@ -22,6 +24,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
@@ -55,6 +58,8 @@ class UserServiceTest {
     private UserEntity userEntity;
     private UserRequestDTO userRequestDTO;
     private UserUpdateDTO userUpdateDTO;
+    private CurrentUserUpdateDTO currentUserUpdateDTO;
+    private PasswordChangeDTO passwordChangeDTO;
 
     @BeforeEach
     void setUp() {
@@ -69,6 +74,8 @@ class UserServiceTest {
                 .build();
         userRequestDTO = new UserRequestDTO("Joao Silva", "joao.silva", "joao@empresa.com", "Senha@123", Role.USER);
         userUpdateDTO = new UserUpdateDTO("Joao Silva Atualizado", Role.ADMIN, true);
+        currentUserUpdateDTO = new CurrentUserUpdateDTO("Joao Silva Atualizado");
+        passwordChangeDTO = new PasswordChangeDTO("Senha@123", "NovaSenha@456");
     }
 
     @Test
@@ -119,39 +126,21 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("createUser - role ADMIN com sucesso")
-    void createUser_AdminRole_Success() {
+    @DisplayName("createUser - role ADMIN nao e permitida no cadastro publico")
+    void createUser_AdminRole_ThrowsException() {
         userRequestDTO.setRole(Role.ADMIN);
-        UserEntity adminEntity = UserEntity.builder()
-                .id(2L).fullName("Admin User").username("joao.silva")
-                .email("joao@empresa.com").password("encoded")
-                .role(Role.ADMIN).active(true).build();
-        when(userRepository.existsByEmail(anyString())).thenReturn(false);
-        when(userRepository.existsByUsername(anyString())).thenReturn(false);
-        when(passwordEncoder.encode(anyString())).thenReturn("encoded");
-        when(userRepository.save(any(UserEntity.class))).thenReturn(adminEntity);
-
-        UserResponseDTO result = userService.createUser(userRequestDTO);
-
-        assertThat(result.getRole()).isEqualTo(Role.ADMIN);
+        assertThatThrownBy(() -> userService.createUser(userRequestDTO))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("apenas usuários com role USER");
     }
 
     @Test
-    @DisplayName("createUser - role MODERATOR com sucesso")
-    void createUser_ModeratorRole_Success() {
+    @DisplayName("createUser - role MODERATOR nao e permitida no cadastro publico")
+    void createUser_ModeratorRole_ThrowsException() {
         userRequestDTO.setRole(Role.MODERATOR);
-        UserEntity modEntity = UserEntity.builder()
-                .id(3L).fullName("Mod User").username("joao.silva")
-                .email("joao@empresa.com").password("encoded")
-                .role(Role.MODERATOR).active(true).build();
-        when(userRepository.existsByEmail(anyString())).thenReturn(false);
-        when(userRepository.existsByUsername(anyString())).thenReturn(false);
-        when(passwordEncoder.encode(anyString())).thenReturn("encoded");
-        when(userRepository.save(any(UserEntity.class))).thenReturn(modEntity);
-
-        UserResponseDTO result = userService.createUser(userRequestDTO);
-
-        assertThat(result.getRole()).isEqualTo(Role.MODERATOR);
+        assertThatThrownBy(() -> userService.createUser(userRequestDTO))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("apenas usuários com role USER");
     }
 
     @Test
@@ -222,6 +211,52 @@ class UserServiceTest {
 
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("findCurrentUser - sucesso")
+    void findCurrentUser_Success() {
+        when(userRepository.findByUsername("joao.silva")).thenReturn(Optional.of(userEntity));
+
+        UserResponseDTO result = userService.findCurrentUser("joao.silva");
+
+        assertThat(result).isNotNull();
+        assertThat(result.getUsername()).isEqualTo("joao.silva");
+    }
+
+    @Test
+    @DisplayName("updateCurrentUser - sucesso")
+    void updateCurrentUser_Success() {
+        when(userRepository.findByUsername("joao.silva")).thenReturn(Optional.of(userEntity));
+        when(userRepository.save(any(UserEntity.class))).thenReturn(userEntity);
+
+        UserResponseDTO result = userService.updateCurrentUser("joao.silva", currentUserUpdateDTO);
+
+        assertThat(result).isNotNull();
+        verify(userRepository).save(any(UserEntity.class));
+    }
+
+    @Test
+    @DisplayName("changePassword - sucesso")
+    void changePassword_Success() {
+        when(userRepository.findByUsername("joao.silva")).thenReturn(Optional.of(userEntity));
+        when(passwordEncoder.matches("Senha@123", "$2a$10$encoded")).thenReturn(true);
+        when(passwordEncoder.encode("NovaSenha@456")).thenReturn("$2a$10$new");
+
+        userService.changePassword("joao.silva", passwordChangeDTO, "127.0.0.1");
+
+        verify(userRepository).save(any(UserEntity.class));
+        verify(passwordEncoder).encode("NovaSenha@456");
+    }
+
+    @Test
+    @DisplayName("changePassword - senha atual invalida lanca AuthenticationServiceException")
+    void changePassword_InvalidCurrentPassword_ThrowsException() {
+        when(userRepository.findByUsername("joao.silva")).thenReturn(Optional.of(userEntity));
+        when(passwordEncoder.matches("Senha@123", "$2a$10$encoded")).thenReturn(false);
+
+        assertThatThrownBy(() -> userService.changePassword("joao.silva", passwordChangeDTO, "127.0.0.1"))
+                .isInstanceOf(AuthenticationServiceException.class);
     }
 
     @Test

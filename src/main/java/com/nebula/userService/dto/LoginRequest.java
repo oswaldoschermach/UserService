@@ -9,14 +9,18 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Credenciais de login")
+@Schema(description = "Payload de login. O campo `username` aceita o nome de usuario cadastrado, nao o e-mail.")
 public class LoginRequest {
 
     @NotBlank(message = "Username é obrigatório")
-    @Schema(description = "Nome de usuário", example = "joao.silva", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "Nome de usuario unico cadastrado no sistema",
+            example = "joao.silva",
+            requiredMode = Schema.RequiredMode.REQUIRED)
     private String username;
 
     @NotBlank(message = "Senha é obrigatória")
-    @Schema(description = "Senha do usuário", example = "Senha@123", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "Senha em texto puro enviada apenas no login",
+            example = "Senha@123",
+            requiredMode = Schema.RequiredMode.REQUIRED)
     private String password;
 }

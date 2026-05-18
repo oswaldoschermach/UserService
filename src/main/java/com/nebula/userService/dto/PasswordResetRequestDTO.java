@@ -10,11 +10,13 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Requisição para solicitar recuperação de senha")
+@Schema(description = "Payload para solicitar recuperacao de senha. A API sempre retorna 204 para evitar enumeracao de usuarios.")
 public class PasswordResetRequestDTO {
 
     @NotBlank(message = "Email é obrigatório")
     @Email(message = "Email deve ser válido")
-    @Schema(description = "Email cadastrado na conta", example = "joao@empresa.com")
+    @Schema(description = "E-mail cadastrado na conta que deve receber o token de recuperacao",
+            example = "joao@empresa.com",
+            requiredMode = Schema.RequiredMode.REQUIRED)
     private String email;
 }

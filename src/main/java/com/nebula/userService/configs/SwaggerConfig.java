@@ -1,60 +1,101 @@
 package com.nebula.userService.configs;
 
-import io.swagger.v3.oas.models.*;
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
-import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
-import org.springdoc.core.customizers.OperationCustomizer;
+import io.swagger.v3.oas.models.servers.Server;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.StringUtils;
 
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 
 @Configuration
 public class SwaggerConfig {
 
     @Bean
-    public OpenAPI customOpenAPI() {
+    public OpenAPI customOpenAPI(
+            @Value("${APP_EXTERNAL_PORT:18743}") String appExternalPort,
+            @Value("${PUBLIC_BASE_URL:}") String publicBaseUrl) {
+
+        List<Server> servers = new ArrayList<>();
+        servers.add(new Server()
+                .url("/")
+                .description("Servidor atual. O Swagger usa automaticamente o mesmo host e porta de onde foi aberto."));
+        servers.add(new Server()
+                .url("http://localhost:" + appExternalPort)
+                .description("Ambiente local via Docker Compose."));
+
+        if (StringUtils.hasText(publicBaseUrl)) {
+            servers.add(new Server()
+                    .url(publicBaseUrl)
+                    .description("Endpoint publico configurado para homologacao ou producao."));
+        }
+
         return new OpenAPI()
                 .info(new Info()
-                        .title("API de Gerenciamento de Usuários")
-                        .version("1.0")
+                        .title("User Service API")
+                        .version("1.0.0")
                         .description("""
-                            <h2>Descrição Geral</h2>
-                            <p>Esta API permite o gerenciamento de usuários, oferecendo funcionalidades como:</p>
-                            <ul>
-                                <li>Cadastro de usuários</li>
-                                <li>Autenticação via JWT</li>
-                                <li>Listagem e busca de usuários</li>
-                            </ul>
-                            
-                            <h2>Tecnologias Utilizadas</h2>
-                            <ul>
-                                <li><strong>Linguagem:</strong> Java 21</li>
-                                <li><strong>Framework:</strong> Spring Boot 3</li>
-                                <li><strong>Banco de Dados:</strong> PostgreSQL</li>
-                                <li><strong>Segurança:</strong> JWT (JSON Web Token)</li>
-                            </ul>
-                            """)
-                        .termsOfService("https://oswaldoschermach.com/terms")
+                                API REST para cadastro, autenticacao e gerenciamento de usuarios.
+
+                                ## Visao geral
+                                Esta API oferece:
+                                - criacao publica de usuarios com rate limiting por IP
+                                - autenticacao com access token e refresh token
+                                - logout com blacklist em Redis
+                                - recuperacao de senha por token enviado por e-mail
+                                - consulta e administracao de usuarios com controle por role
+
+                                ## Fluxo recomendado de autenticacao
+                                1. Chame `POST /api/auth/login` com `username` e `password`
+                                2. Guarde `token` e `refreshToken`
+                                3. Envie o header `Authorization: Bearer <token>` nos endpoints protegidos
+                                4. Quando o access token expirar, chame `POST /api/auth/refresh`
+                                5. Ao encerrar a sessao, chame `POST /api/auth/logout`
+
+                                ## Perfis e autorizacao
+                                - `USER`: leitura autenticada
+                                - `ADMIN`: leitura, atualizacao e exclusao de usuarios
+                                - `MODERATOR`: role de dominio disponivel para regras futuras
+
+                                ## Convencoes de resposta
+                                - `200/201`: operacao concluida com corpo JSON
+                                - `204`: operacao concluida sem corpo
+                                - `400`: payload invalido ou parametro inconsistente
+                                - `401`: autenticacao ausente, invalida ou token invalido
+                                - `403`: autenticado sem permissao para a operacao
+                                - `404`: recurso nao encontrado
+                                - `409`: conflito de negocio
+                                - `429`: limite de requisicoes excedido
+
+                                ## Paginacao
+                                O endpoint `GET /api/users/search` usa:
+                                - `page`: indice iniciado em `0`
+                                - `size`: quantidade de itens por pagina
+
+                                ## Ambientes uteis
+                                - Swagger local: `http://localhost:%s/swagger-ui.html`
+                                - API local: `http://localhost:%s`
+                                """.formatted(appExternalPort, appExternalPort))
                         .contact(new Contact()
-                                .name("Oswaldo Schermach")
-                                .email("oswaldo.schermach@gmail.com")
-                                .url("https://www.linkedin.com/in/oswaldoschermach/"))
+                                .name("Equipe User Service")
+                                .email("dev@nebula.local"))
                         .license(new License()
                                 .name("Apache 2.0")
                                 .url("https://www.apache.org/licenses/LICENSE-2.0.html")))
-                .externalDocs(new ExternalDocumentation()
-                        .description("Documentação Completa")
-                        .url("https://oswaldoschermach.com/docs"))
+                .servers(servers)
                 .components(new Components()
                         .addSecuritySchemes("bearerAuth", new SecurityScheme()
-                                .name("bearerAuth")
+                                .name("Authorization")
                                 .type(SecurityScheme.Type.HTTP)
                                 .scheme("bearer")
-                                .bearerFormat("JWT")))
-                .addSecurityItem(new SecurityRequirement().addList("bearerAuth"));
+                                .bearerFormat("JWT")
+                                .description("Informe o access token no formato: `Bearer eyJ...`")));
     }
 }
